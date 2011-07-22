@@ -1,5 +1,6 @@
 #ifndef _FILEPACK_H_
 #define _FILEPACK_H_
+#define __USE_LARGEFILE64
 #include <stdint.h>
 #include <map>
 /*
@@ -11,16 +12,19 @@
 索引区的最后一个索引是指向下一个索引区的偏移值
 索引的第一个4Byte=0，表示该条记录为空
 */
+
+#define INDEXCOUNT	512
 typedef struct _FILEINDEX_
 {
 	uint32_t m_size;		//文件大小(小于4G)，如果==0，且m_filename==“”则表示这个记录为空
 	char	m_filename[500];	//文件名（含路径）
 	uint64_t m_offset;		//文件偏移
 }FILEINDEX,*PFILEINDEX;
-typedef FILEINDEX FILEBLOCK[512];
+typedef FILEINDEX FILEBLOCK[INDEXCOUNT];
 
 class LPackFile{
 	std::map<const char *, uint64_t> m_FileOffset;
+	std::map<const char *, uint32_t> m_FileSize;
 	int m_fd;
 	void *m_mmap;
 	uint64_t	m_filesize;
@@ -29,6 +33,7 @@ public:
 	LPackFile(const char *filename);
 	~LPackFile();
 	void OpenFile(const char * filename);
+	void CloseFile();
 	void AppendSubFile(const char*srcfilename, const char* destfilename);
 	void DeleteSubFile(const char*destfilename);
 	void ReadSubFile(const char*destfilename);

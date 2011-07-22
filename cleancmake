@@ -1,0 +1,1 @@
+make clean;rm CMakeCache.txt CMakeFiles/ cmake_install.cmake Makefile -r

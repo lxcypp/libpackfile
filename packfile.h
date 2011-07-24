@@ -3,6 +3,7 @@
 #define __USE_LARGEFILE64
 #include <stdint.h>
 #include <map>
+#include <string>
 /*
 文件格式：
 索引区+内容区
@@ -43,8 +44,8 @@ typedef struct _FILEINDEX_
 
 class LPackFile{
 	FILEHEADER m_fileheader;
-	std::map<const char *, uint64_t> m_FileOffset;
-	std::map<const char *, uint32_t> m_FileSize;
+	std::map<std::string, uint64_t> m_FileOffset;	//subfile's index offset
+	std::map<std::string, uint32_t> m_FileSize;
 	int m_fd;
 	void *m_mmap;
 	uint64_t	m_filesize;
@@ -55,6 +56,8 @@ public:
 	
 	void UnmapFile();
 	void MapFile();
+	void RecheckAllSubFile();
+	
 	void OpenFile(const char * filename);
 	void CloseFile();
 	//在文件末尾附加一个索引块

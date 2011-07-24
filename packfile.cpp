@@ -78,6 +78,12 @@ void LPackFile::OpenFile(const char *filename)
 	lseek64(m_fd, 0, SEEK_SET);
 	MapFile();
 	
+}
+
+void LPackFile::RecheckAllSubFile()
+{
+	m_FileOffset.clear();
+	m_FileSize.clear();
 	uint64_t blockoff = sizeof(FILEHEADER);
 	while(blockoff < m_filesize)
 	{
@@ -92,7 +98,7 @@ void LPackFile::OpenFile(const char *filename)
 			{//空文件名（被删除的），跳过
 			}else
 			{
-				m_FileOffset[pIndex[i].m_filename]=pIndex[i].m_offset;
+				m_FileOffset[pIndex[i].m_filename]=blockoff + i*sizeof(FILEINDEX);
 				m_FileSize[pIndex[i].m_filename]=pIndex[i].m_size;
 			}
 		}
@@ -192,9 +198,16 @@ void LPackFile::AppendSubFile(const char*srcfilename, const char* destfilename)
 	close(fd);
 	
 	MapFile();
+	RecheckAllSubFile();
 }
 void LPackFile::DeleteSubFile(const char*destfilename)
 {
+	if(m_FileOffset.find(destfilename)==m_FileOffset.end())
+		return;
+	FILEINDEX *pIndex = (FILEINDEX*)((char*)m_mmap + m_FileOffset[destfilename]);
+	if(pIndex[0].m_size>0)
+		memset( (char*)m_mmap+pIndex[0].m_offset, 0, pIndex[0].m_size );
+	memset(pIndex, 0, sizeof(FILEINDEX));
 }
 void LPackFile::ReadSubFile(const char*destfilename)
 {

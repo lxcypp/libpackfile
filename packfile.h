@@ -64,7 +64,8 @@ public:
 	void NewIndexBlockAtFileEnd();
 	void AppendSubFile(const char*srcfilename, const char* destfilename);
 	void DeleteSubFile(const char*destfilename);
-	void ReadSubFile(const char*destfilename);
+	void* GetSubFileContent(const char*destfilename);	//Get File Content Offset
+	uint32_t GetSubFileSize(const char*destfilename);
 	void PackFile();
 	
 	uint64_t FindEmptyIndex();

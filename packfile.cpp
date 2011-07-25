@@ -111,7 +111,7 @@ void LPackFile::RecheckAllSubFile()
 			blockoff += pIndex[i].m_offset;
 		}
 	}
-	printf("size=%d\n",m_FileOffset.size());
+	//printf("size=%d\n",m_FileOffset.size());
 }
 
 //在文件末尾附加一个索引块

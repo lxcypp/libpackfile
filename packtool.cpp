@@ -5,23 +5,26 @@
 LPackFile file;//("a.pac");
 const struct option long_options[] = {
 	{ "packfile",      1, NULL, 'p' },
+	{ "unpack",      1, NULL, 'u' },
 	{ "version", 0, NULL, 'v' },
 	{ NULL,          0, NULL, 0}
 };
-const char* const short_options = "p:vV";
+const char* const short_options = "p:vVu:";
 const  char *VERSION="Version 0.1 BUILD: "__DATE__;
-static std::string strPackFile="";
+std::string strPackFile="";
+std::string strUnpackPath="";
+bool bUnpack=false;
 
 void ParseOption(int argc, char* argv[])
 {
-	int next_option;//ÏÂÒ»¸öÒª´¦ÀíµÄ²ÎÊı·ûºÅ
+	int next_option;//ä¸‹ä¸€ä¸ªè¦å¤„ç†çš„å‚æ•°ç¬¦å·
 	do
 	{
 		next_option = getopt_long (argc, argv, short_options, long_options, NULL);
 		switch (next_option)
 		{
 			case 'p':     /* pack file */    
-				/* ´ËÊ±optargÖ¸Ïò -cºóµÄfilename */
+				/* æ­¤æ—¶optargæŒ‡å‘ -cåçš„filename */
 				strPackFile=optarg;
 				//SetConfigIniFile(optarg);
 				break;
@@ -32,12 +35,16 @@ void ParseOption(int argc, char* argv[])
 				printf("packtool  %s\r\n", VERSION);
 				exit(0);
 				break;
-			case ':':     /* È±·¦³¤Ñ¡ÏîÄÚÈİ */
+			case 'u':
+				strUnpackPath=optarg;
+				bUnpack=true;
 				break;
-			case '?':     /* ³öÏÖÒ»¸öÎ´Ö¸¶¨µÄ²ÎÊı*/
+			case ':':     /* ç¼ºä¹é•¿é€‰é¡¹å†…å®¹ */
 				break;
-			case -1:      /* ´¦ÀíÍê±Ïºó·µ»Ø-1 */
-			default:      /* Î´Ö¸¶¨µÄ²ÎÊı³öÏÖ£¬³ö´í´¦Àí */
+			case '?':     /* å‡ºç°ä¸€ä¸ªæœªæŒ‡å®šçš„å‚æ•°*/
+				break;
+			case -1:      /* å¤„ç†å®Œæ¯•åè¿”å›-1 */
+			default:      /* æœªæŒ‡å®šçš„å‚æ•°å‡ºç°ï¼Œå‡ºé”™å¤„ç† */
 				break;
 		}
 	}while (next_option !=-1);
@@ -49,14 +56,12 @@ int main(int argc, char* argv[])
 	if(strPackFile=="")
 		return 0;
 	file.OpenFile(strPackFile.c_str());
+	if(bUnpack)
+	{
+	}else
 	while (optind < argc)
 	{
-		/*
-		printf ("non-option ARGV-elements: ");
-		while (optind < argc)
-			printf ("%s ", argv[optind++]);
-		putchar ('\n');
-		*/
+		//non-option ARGV arguments = file list
 		printf("Appending file = %s\n",argv[optind]);
 		file.AppendSubFile(argv[optind],argv[optind]);
 		optind++;

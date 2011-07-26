@@ -43,6 +43,7 @@ typedef struct _FILEINDEX_
 //typedef FILEINDEX FILEBLOCK[INDEXCOUNT];
 
 class LPackFile{
+	std::string m_FileName;
 	FILEHEADER m_fileheader;
 	std::map<std::string, uint64_t> m_FileOffset;	//subfile's index offset
 	std::map<std::string, uint32_t> m_FileSize;
@@ -62,11 +63,11 @@ public:
 	void CloseFile();
 	//在文件末尾附加一个索引块
 	void NewIndexBlockAtFileEnd();
-	void AppendSubFile(const char*srcfilename, const char* destfilename);
+	void AppendSubFile(const char*srcfilename, const char* destfilename, const char*filemap=0, uint32_t filesize=0);
 	void DeleteSubFile(const char*destfilename);
 	void* GetSubFileContent(const char*destfilename);	//Get File Content Offset
 	uint32_t GetSubFileSize(const char*destfilename);
-	void PackFile();
+	void CompactFile();
 	
 	uint64_t FindEmptyIndex();
 };

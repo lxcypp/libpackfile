@@ -6,14 +6,16 @@ LPackFile file;//("a.pac");
 const struct option long_options[] = {
 	{ "packfile",      1, NULL, 'p' },
 	{ "unpack",      1, NULL, 'u' },
+	{ "compress",      0, NULL, 'c' },
 	{ "version", 0, NULL, 'v' },
 	{ NULL,          0, NULL, 0}
 };
-const char* const short_options = "p:vVu:";
+const char* const short_options = "p:vVu:c";
 const  char *VERSION="Version 0.1 BUILD: "__DATE__;
 std::string strPackFile="";
 std::string strUnpackPath="";
 bool bUnpack=false;
+bool bCompress=false;
 
 void ParseOption(int argc, char* argv[])
 {
@@ -34,6 +36,9 @@ void ParseOption(int argc, char* argv[])
 			case 'V':     /* version */
 				printf("packtool  %s\r\n", VERSION);
 				exit(0);
+				break;
+			case 'c':
+				bCompress=true;
 				break;
 			case 'u':
 				strUnpackPath=optarg;
@@ -56,6 +61,10 @@ int main(int argc, char* argv[])
 	if(strPackFile=="")
 		return 0;
 	file.OpenFile(strPackFile.c_str());
+	if(bCompress)
+	{
+		file.CompactFile();
+	}else
 	if(bUnpack)
 	{
 	}else

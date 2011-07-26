@@ -15,6 +15,7 @@ LPackFile::LPackFile()
 	m_fd = 0;
 	m_mmap = 0;
 	m_filesize = 0;
+	m_FileName = "";
 }
 
 LPackFile::LPackFile(const char *filename)
@@ -23,6 +24,7 @@ LPackFile::LPackFile(const char *filename)
 	m_fd = 0;
 	m_mmap = 0;
 	m_filesize = 0;
+	m_FileName = "";
 	OpenFile(filename);
 }
 
@@ -41,6 +43,7 @@ void LPackFile::CloseFile()
 	m_fd = 0;
 	m_FileOffset.clear();
 	m_FileSize.clear();
+	m_FileName = "";
 }
 
 void LPackFile::UnmapFile()
@@ -64,6 +67,7 @@ void LPackFile::MapFile()
 
 void LPackFile::OpenFile(const char *filename)
 {
+	m_FileName = filename;
 	if(access(filename,0)!=0)
 	{
 		m_fd = open(filename, O_CREAT|O_RDWR, 0664);
@@ -167,17 +171,23 @@ uint64_t LPackFile::FindEmptyIndex()
 	return -1;
 }
 
-void LPackFile::AppendSubFile(const char*srcfilename, const char* destfilename)
+void LPackFile::AppendSubFile(const char*srcfilename, const char* destfilename, const char*filemap, uint32_t filesize)
 {
-	int fd = open(srcfilename,O_RDONLY);
-	if(fd<=0)
-		return;
+	int fd=-1;
+	if(filemap)
+	{
+	}else
+	{
+		fd = open(srcfilename,O_RDONLY);
+		if(fd<=0)
+			return;
+		filesize = lseek64(fd,0,SEEK_END);
+		lseek64(fd,0,SEEK_SET);
+	}
 	if(m_FileOffset.find(destfilename)!=m_FileOffset.end())
 	{//File Exist, Delete first
 		DeleteSubFile(destfilename);
 	}
-	uint64_t filesize = lseek64(fd,0,SEEK_END);
-	lseek64(fd,0,SEEK_SET);
 	uint64_t emptyindexoffset = FindEmptyIndex();
 	FILEINDEX *pIndex = (FILEINDEX*)((char*)m_mmap + emptyindexoffset);
 	pIndex[0].m_offset = m_filesize;
@@ -187,20 +197,26 @@ void LPackFile::AppendSubFile(const char*srcfilename, const char* destfilename)
 	UnmapFile();
 	//复制文件内容
 	lseek64(m_fd, 0 ,SEEK_END);
-	char buffer[1024*64];
-	uint64_t copyed = 0;
-	while(copyed<filesize)
+	if(filemap)
 	{
-		int s = read(fd,buffer,sizeof(buffer));
-		if(s==-1)
-		{//读取错误，重置索引区，并退出，已写入的数据留在那里放弃
-			memset(pIndex, 0, sizeof(FILEINDEX));
-			break;
+		write(m_fd, filemap, filesize);
+	}else
+	{
+		char buffer[1024*64];
+		uint64_t copyed = 0;
+		while(copyed<filesize)
+		{
+			int s = read(fd,buffer,sizeof(buffer));
+			if(s==-1)
+			{//读取错误，重置索引区，并退出，已写入的数据留在那里放弃
+				memset(pIndex, 0, sizeof(FILEINDEX));
+				break;
+			}
+			copyed +=s;
+			write(m_fd,buffer,s);
 		}
-		copyed +=s;
-		write(m_fd,buffer,s);
+		close(fd);
 	}
-	close(fd);
 	
 	MapFile();
 	RecheckAllSubFile();
@@ -232,8 +248,45 @@ uint32_t LPackFile::GetSubFileSize(const char*destfilename)
 	return pIndex[0].m_size;
 }
 
-void LPackFile::PackFile()
+void LPackFile::CompactFile()
 {
+	std::string strFile = m_FileName;
+	std::string strDupFile = m_FileName + ".dup";
+	remove(strDupFile.c_str());
+	LPackFile dupfile;
+	dupfile.OpenFile(strDupFile.c_str());
+
+	uint64_t blockoff = sizeof(FILEHEADER);
+	while(blockoff < m_filesize)
+	{
+		FILEINDEX *pIndex = (FILEINDEX*)((char*)m_mmap + blockoff);
+		int i=0;
+		for(i=0;i<INDEXCOUNT-1;++i)
+		{
+			if(pIndex[i].m_size==0 && pIndex[i].m_filename[0]==0)
+			{//空记录，跳过
+			}else
+			if(pIndex[i].m_filename[0]==0)
+			{//空文件名（被删除的），跳过
+			}else
+			{//文件转存
+				dupfile.AppendSubFile(pIndex[i].m_filename,pIndex[i].m_filename,(char*)m_mmap+pIndex[i].m_offset,pIndex[i].m_size);
+			}
+		}
+		//i==INDEXCOUNT-1，最后一条记录，其m_offset域是下一个索引区的偏移值
+		if(pIndex[i].m_offset==0)
+		{//无下一条记录，返回
+			break;
+		}else
+		{//跳到下一条记录
+			blockoff += pIndex[i].m_offset;
+		}
+	}
+	
+	dupfile.CloseFile();
+	CloseFile();
+	rename(strDupFile.c_str(), strFile.c_str());
+	OpenFile(strFile.c_str());
 }
 
 
